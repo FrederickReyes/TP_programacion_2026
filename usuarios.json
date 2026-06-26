@@ -1,0 +1,19 @@
+{
+    "admin": {
+        "password": "1234",
+        "tipo": "admin",
+        "edad": 99,
+        "puntajes": []
+    },
+    "frederick": {
+        "password": "1234",
+        "tipo": "jugador",
+        "edad": 25,
+        "puntajes": [
+            {
+                "juego": "ahorcado",
+                "puntaje": 0
+            }
+        ]
+    }
+}
