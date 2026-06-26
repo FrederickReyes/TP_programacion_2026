@@ -1,118 +1,189 @@
 import random
-from palabras import palabras_ahorcado
-from usuarios import usuarios
+import json
+import os
+from usuarios import guardar_partida
+
+ARCHIVO_PALABRAS = os.path.join(os.path.dirname(__file__), "palabras.json")
+
+
+def cargar_palabras():
+    """
+    Carga la lista de palabras (lista de diccionarios) desde el
+    archivo palabras.json.
+
+    No recibe parámetros.
+
+    Devuelve una lista de diccionarios, cada uno con la clave "palabra".
+    """
+
+    with open(ARCHIVO_PALABRAS, "r", encoding="utf-8") as archivo:
+        return json.load(archivo)
+
+
+def elegir_palabra_nueva(palabras, palabras_usadas):
+    """
+    Elige una palabra al azar de la lista de palabras que todavía
+    no haya sido usada en la partida actual. Si ya se usaron todas,
+    permite que se repitan.
+
+    Parámetros:
+        palabras (list): lista de diccionarios con clave "palabra".
+        palabras_usadas (list): palabras ya jugadas en esta partida.
+
+    Devuelve un string con la palabra elegida.
+    """
+
+    disponibles = []
+
+    for palabra_dict in palabras:
+
+        if palabra_dict["palabra"] not in palabras_usadas:
+            disponibles.append(palabra_dict["palabra"])
+
+    if len(disponibles) == 0:
+
+        disponibles = []
+
+        for palabra_dict in palabras:
+            disponibles.append(palabra_dict["palabra"])
+
+    return random.choice(disponibles)
 
 
 def jugar_ahorcado(usuario):
     """
-    Juego del Ahorcado. Elige una palabra al azar de la lista
-    palabras_ahorcado, revela 2 letras de pista al empezar, y le
-    da al jugador 6 intentos para adivinar el resto de las letras.
+    Juego del Ahorcado. El jugador cuenta con 6 vidas en total y
+    debe ir adivinando palabras una tras otra (elegidas al azar,
+    sin repetirse hasta agotar el listado). Cada palabra acertada
+    suma puntaje y NO recupera vidas; el juego continúa con una
+    palabra nueva hasta que se agoten las vidas o el jugador
+    decida abandonar ingresando "salir".
 
     Parámetro: usuario (string) con el nombre del jugador que está
-    jugando, para poder sumarle puntaje si gana.
+    jugando, para poder guardarle el puntaje obtenido.
 
-    No devuelve nada, solo imprime el desarrollo del juego y
-    actualiza el puntaje del usuario dentro del diccionario usuarios.
+    Devuelve el puntaje total acumulado en la partida (int).
     """
 
-    palabra = random.choice(palabras_ahorcado)
+    palabras = cargar_palabras()
+    palabras_usadas = []
 
-    intentos = 6
+    vidas = 6
+    puntaje_total = 0
+    palabras_acertadas = 0
 
-    # Letras que el jugador ya adivinó bien.
-    letras_adivinadas = []
+    juego_abandonado = False
 
-    # Letras que el jugador ya probó (bien o mal), para no dejarlo repetir.
-    letras_usadas = []
+    print("""
+    🪢══════════════════════════════🪢
+              🎯 AHORCADO 🎯
+    ❤️ Tenés 6 vidas en total
+    🔁 Cada palabra que adivines, viene otra nueva
+    🚪 Escribí "salir" para abandonar
+    🪢══════════════════════════════🪢
+    """)
 
-    # Damos 2 pistas iniciales: revelamos 2 letras distintas de la
-    # palabra al azar, como en el ahorcado de mesa.
-    letras_distintas = []
+    while vidas > 0 and juego_abandonado == False:
 
-    for letra_de_la_palabra in palabra:
+        palabra = elegir_palabra_nueva(palabras, palabras_usadas)
+        palabras_usadas.append(palabra)
 
-        if letra_de_la_palabra not in letras_distintas:
+        letras_adivinadas = []
+        letras_usadas = []
 
-            letras_distintas.append(letra_de_la_palabra)
-
-    cantidad_pistas = 2
-
-    if cantidad_pistas > len(letras_distintas) - 1:
-
-        cantidad_pistas = len(letras_distintas) - 1
-
-    pistas = random.sample(letras_distintas, cantidad_pistas)
-
-    for pista in pistas:
-
-        letras_adivinadas.append(pista)
-        letras_usadas.append(pista)
-
-    juego_ganado = False
-
-    print("\n-- AHORCADO --")
-
-    while intentos > 0 and juego_ganado == False:
-
-        # Armamos la palabra para mostrar, letra por letra.
-        palabra_mostrada = ""
+        letras_distintas = []
 
         for letra_de_la_palabra in palabra:
 
-            if letra_de_la_palabra in letras_adivinadas:
+            if letra_de_la_palabra not in letras_distintas:
+                letras_distintas.append(letra_de_la_palabra)
 
-                palabra_mostrada = palabra_mostrada + letra_de_la_palabra
+        cantidad_pistas = 1
+
+        if cantidad_pistas > len(letras_distintas) - 1:
+            cantidad_pistas = len(letras_distintas) - 1
+
+        if cantidad_pistas > 0:
+
+            pistas = random.sample(letras_distintas, cantidad_pistas)
+
+            for pista in pistas:
+                letras_adivinadas.append(pista)
+                letras_usadas.append(pista)
+
+        palabra_ganada = False
+
+        print(f"\n🆕 Nueva palabra | ❤️ Vidas: {vidas} | ⭐ Puntaje: {puntaje_total}")
+
+        while vidas > 0 and palabra_ganada == False and juego_abandonado == False:
+
+            palabra_mostrada = ""
+
+            for letra_de_la_palabra in palabra:
+
+                if letra_de_la_palabra in letras_adivinadas:
+                    palabra_mostrada = palabra_mostrada + letra_de_la_palabra
+                else:
+                    palabra_mostrada = palabra_mostrada + "_"
+
+            print("\n📝 Palabra:", palabra_mostrada)
+            print("❤️ Vidas restantes:", vidas)
+
+            letra = input("🔤 Ingrese una letra (o 'salir'): ").lower()
+
+            if letra == "salir":
+
+                juego_abandonado = True
+                print("\n🚪 Abandonaste la partida.")
+                print("📖 La palabra era:", palabra)
+
+            elif len(letra) != 1:
+
+                print("⚠️ Debe ingresar una sola letra.")
+
+            elif letra in letras_usadas:
+
+                print("🔄 Ya probaste esa letra. ¡Intentá con otra!")
 
             else:
 
-                palabra_mostrada = palabra_mostrada + "_"
+                letras_usadas.append(letra)
 
-        print("\nPalabra:", palabra_mostrada)
-        print("Intentos restantes:", intentos)
+                if letra in palabra:
 
-        letra = input("Ingrese una letra: ").lower()
+                    letras_adivinadas.append(letra)
+                    print("✅ ¡Letra correcta!")
 
-        if len(letra) != 1:
+                    palabra_completa = True
 
-            print("Debe ingresar una sola letra.")
+                    for letra_de_la_palabra in palabra:
 
-        elif letra in letras_usadas:
+                        if letra_de_la_palabra not in letras_adivinadas:
+                            palabra_completa = False
 
-            print("Ya probó esa letra, intente con otra.")
+                    if palabra_completa == True:
+                        palabra_ganada = True
 
-        else:
+                else:
 
-            letras_usadas.append(letra)
+                    vidas -= 1
+                    print("❌ Letra incorrecta. Perdiste una vida 💔")
 
-            if letra in palabra:
+        if palabra_ganada == True:
 
-                letras_adivinadas.append(letra)
+            palabras_acertadas += 1
+            puntaje_total += vidas
 
-                # Revisamos si ya están todas las letras de la palabra.
-                palabra_completa = True
+            print(f"\n🎉 ¡Adivinaste! La palabra era: {palabra} 🏆")
+            print(f"⭐ Puntaje acumulado: {puntaje_total} pts")
 
-                for letra_de_la_palabra in palabra:
+    if juego_abandonado == False:
 
-                    if letra_de_la_palabra not in letras_adivinadas:
+        print("\n💀 ¡Te quedaste sin vidas! Fin del juego.")
 
-                        palabra_completa = False
+    print(f"\n📊 Resumen: {palabras_acertadas} palabra(s) acertada(s) | "
+          f"⭐ Puntaje final: {puntaje_total} pts")
 
-                if palabra_completa == True:
+    guardar_partida(usuario, "ahorcado", puntaje_total)
 
-                    juego_ganado = True
-
-            else:
-
-                intentos -= 1
-                print("Letra incorrecta.")
-
-    if juego_ganado == True:
-
-        print("\nGanaste! La palabra era:", palabra)
-        usuarios[usuario]["puntaje"] += 1
-
-    else:
-
-        print("\nPerdiste.")
-        print("La palabra era:", palabra)
+    return puntaje_total
