@@ -2,18 +2,21 @@ from usuarios import usuarios, registrar_jugador, iniciar_sesion
 from funciones import menu_admin, menu_jugador
 
 
-# MENU PRINCIPAL
+# MENÚ PRINCIPAL
 
 while True:
 
     print("""
-========== MENU PRINCIPAL ==========
-1. Registrarse
-2. Iniciar sesión
-3. Salir
+    🎮══════════════════════════════🎮
+            MENU PRINCIPAL
+    🎮══════════════════════════════🎮
+
+    1️⃣ Registrarse 📝
+    2️⃣ Iniciar sesión 🔐
+    3️⃣ Salir 🚪
     """)
 
-    opcion = input("Seleccione una opción: ")
+    opcion = input("➡️ Seleccione una opción: ")
 
     if opcion == "1":
         registrar_jugador()
@@ -33,8 +36,8 @@ while True:
                 menu_jugador(usuario)
 
     elif opcion == "3":
-        print("Programa finalizado.")
+        print("👋 Programa finalizado. ¡Gracias por jugar! 🎮")
         break
 
     else:
-        print("Opción inválida.")
+        print("❌ Opción inválida. Elegí 1, 2 o 3.")
